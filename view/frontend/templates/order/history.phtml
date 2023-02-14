@@ -1,0 +1,89 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+// phpcs:disable Magento2.Templates.ThisInTemplate
+// @codingStandardsIgnoreFile
+
+/** @var \Magento\Sales\Block\Order\History $block */
+?>
+<?php $filteroption = $block->getFilterOption();
+if (empty($filteroption)) {
+    $filteroption = 0;
+}
+?>
+<select id="filter_orders">
+    <option value="0" <?= ($filteroption == 0)? 'selected': ''; ?>><?= (__('---All---')) ?></option>
+    <option value="3" <?= ($filteroption == 3)? 'selected': ''; ?>><?= (__('Last 24 Hours')) ?></option>
+    <option value="1" <?= ($filteroption == 1)? 'selected': ''; ?> ><?= (__('Last 30 Days')) ?></option>
+    <option value="2" <?= ($filteroption == 2)? 'selected': ''; ?>><?= (__('Last 6 months')) ?></option>
+</select>
+
+<?php 
+$_orders = $block->getOrders();
+?>
+<?= $block->getChildHtml('info') ?>
+<?php if ($_orders && count($_orders)) : ?>
+    <div class="table-wrapper orders-history">
+        <table class="data table table-order-items history" id="my-orders-table">
+            <caption class="table-caption"><?= $block->escapeHtml(__('Orders')) ?></caption>
+            <thead>
+                <tr>
+                    <th scope="col" class="col id"><?= $block->escapeHtml(__('Order ID')) ?></th>
+                    <th scope="col" class="col date"><?= $block->escapeHtml(__('Order Date')) ?></th>
+                    <?= $block->getChildHtml('extra.column.header') ?>
+                    <th scope="col" class="col total"><?= $block->escapeHtml(__('Order Total')) ?></th>
+                    <th scope="col" class="col status"><?= $block->escapeHtml(__('Status')) ?></th>
+                    <th scope="col" class="col actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($_orders as $_order) : ?>
+                    <tr>
+                        <td data-th="<?= $block->escapeHtml(__('Order ID')) ?>" class="col id"><?= $block->escapeHtml($_order->getRealOrderId()) ?></td>
+                        <td data-th="<?= $block->escapeHtml(__('Order Date')) ?>" class="col date"><?= /* @noEscape */ $block->formatDate($_order->getCreatedAt()) ?></td>
+                        <?php $extra = $block->getChildBlock('extra.container'); ?>
+                        <?php if ($extra) : ?>
+                            <?php $extra->setOrder($_order); ?>
+                            <?= $extra->getChildHtml() ?>
+                        <?php endif; ?>
+                        <td data-th="<?= $block->escapeHtml(__('Order Total')) ?>" class="col total"><?= /* @noEscape */ $_order->formatPrice($_order->getGrandTotal()) ?></td>
+                        <td data-th="<?= $block->escapeHtml(__('Status')) ?>" class="col status"><?= $block->escapeHtml($_order->getStatusLabel()) ?></td>
+                        <td data-th="<?= $block->escapeHtml(__('Actions')) ?>" class="col actions">
+                            <a href="<?= $block->escapeUrl($block->getViewUrl($_order)) ?>" class="action view">
+                                <span><?= $block->escapeHtml(__('View Order')) ?></span>
+                            </a>
+                            <?php if ($this->helper(\Magento\Sales\Helper\Reorder::class)->canReorder($_order->getEntityId())) : ?>
+                                <a href="#" data-post='<?= /* @noEscape */
+                                $this->helper(\Magento\Framework\Data\Helper\PostHelper::class)
+                                    ->getPostData($block->getReorderUrl($_order))
+                                ?>' class="action order">
+                                    <span><?= $block->escapeHtml(__('Reorder')) ?></span>
+                                </a>
+                            <?php endif ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+<?php else : ?>
+    <div class="message info empty"><span><?= $block->escapeHtml($block->getEmptyOrdersMessage()) ?></span></div>
+<?php endif ?>
+
+<?php if ($block->getPagerHtml()): ?>
+    <div class="orders-pagination"><?php echo $block->getPagerHtml(); ?></div>
+<?php endif ?>
+<script type="text/javascript">
+require(['jquery'], function($) {
+        $('#filter_orders').on('change',function(){
+            
+            var newUrl = "<?php echo $block->getBaseUrl(); ?>"+'sales/order/history?filter='+$(this).val();
+            window.location.href = newUrl;
+
+        });
+    });
+
+</script>
